@@ -1,17 +1,17 @@
-from gics.definitions import d_20140228, d_20160901, d_20180929
+from gics.definitions import d_20140228, d_20160901, d_20180929, d_20231016
 from gics.map import Map
 
 DEFINITIONS = {
     "20140228": d_20140228,
     "20160901": d_20160901,
     "20180929": d_20180929,
+    "20231016": d_20231016,
 }
 
-DEFAULT_VERSION = '20180929'
+DEFAULT_VERSION = "20180929"
 
 
 class GICS:
-
     def __init__(self, code: str = None, version: str = DEFAULT_VERSION):
         """Represents a GICS code. You can instantiate GICS codes using a string representing a code.
         The string has to be a valid GICS. If it's not, that is_valid method will return false.
@@ -31,7 +31,9 @@ class GICS:
         _definition = DEFINITIONS.get(self._definition_version)
 
         if not _definition:
-            raise ValueError(f'Unsupported GICS version: {version}. Available versions are {list(DEFINITIONS.keys())}')
+            raise ValueError(
+                f"Unsupported GICS version: {version}. Available versions are {list(DEFINITIONS.keys())}"
+            )
 
         self._definition = Map.create_recursively(_definition)
 
@@ -42,7 +44,7 @@ class GICS:
                 self._get_definition(code[:2]),
                 self._get_definition(code[:4]) if len(code) >= 4 else None,
                 self._get_definition(code[:6]) if len(code) >= 6 else None,
-                self._get_definition(code[:8]) if len(code) == 8 else None
+                self._get_definition(code[:8]) if len(code) == 8 else None,
             ]
         else:
             self._code = None
@@ -53,8 +55,14 @@ class GICS:
 
     @property
     def is_valid(self) -> bool:
-        return self.code and isinstance(self.code, str) and len(self.code) >= 2 and len(self.code) <= 8 and len(
-            self.code) % 2 == 0 and self._definition.get(self.code)
+        return (
+            self.code
+            and isinstance(self.code, str)
+            and len(self.code) >= 2
+            and len(self.code) <= 8
+            and len(self.code) % 2 == 0
+            and self._definition.get(self.code)
+        )
 
     @property
     def code(self):
@@ -112,15 +120,25 @@ class GICS:
             and description (where applicable)
         """
         if self.is_valid:
-            keys = filter(lambda k: k.startswith(self._code) and len(k) == len(self._code) + 2, self._definition.keys())
+            keys = filter(
+                lambda k: k.startswith(self._code) and len(k) == len(self._code) + 2,
+                self._definition.keys(),
+            )
         else:
             keys = filter(lambda k: len(k) == 2, self._definition.keys())
 
-        return list(map(lambda k: Map({
-            'code': k,
-            'name': self._definition[k].name,
-            'description': self._definition[k].description
-        }), keys))
+        return list(
+            map(
+                lambda k: Map(
+                    {
+                        "code": k,
+                        "name": self._definition[k].name,
+                        "description": self._definition[k].description,
+                    }
+                ),
+                keys,
+            )
+        )
 
     def _get_definition(self, gics_code):
         definition = self._definition[gics_code]
@@ -138,13 +156,18 @@ class GICS:
         Returns:
 
         """
-        if not self.is_valid or not gics_level or not isinstance(gics_level,
-                                                                 int) or gics_level < 1 or gics_level > 4:
+        if (
+            not self.is_valid
+            or not gics_level
+            or not isinstance(gics_level, int)
+            or gics_level < 1
+            or gics_level > 4
+        ):
             return None
 
         return self._levels[gics_level - 1]
 
-    def is_same(self, another_gics: 'GICS') -> bool:
+    def is_same(self, another_gics: "GICS") -> bool:
         """Determines if this GICS is the same as the given one.
         To be considered the same both GICS must either be invalid, or be valid and with the exact same code.
         This means that they represent the same values at the same level.
@@ -152,10 +175,13 @@ class GICS:
         Args:
             another_gics: GICS object to compare with
         """
-        return another_gics and (self.is_valid == another_gics.is_valid) and (
-                self.is_valid is False or self._code == another_gics.code)
+        return (
+            another_gics
+            and (self.is_valid == another_gics.is_valid)
+            and (self.is_valid is False or self._code == another_gics.code)
+        )
 
-    def is_within(self, another_gics: 'GICS'):
+    def is_within(self, another_gics: "GICS"):
         """Determines if this GICS is a sub-component of the given GICS. For example, GICS 101010 is within GICS 10.
         Invalid GICS do not contain any children or belong to any parent, so if any of the GICS are invalid,
         this will always be false.
@@ -164,10 +190,14 @@ class GICS:
         Args:
             another_gics: GICS object to compare with
         """
-        return self.is_valid and another_gics.is_valid and self._code != another_gics.code and self._code.startswith(
-            another_gics.code)
+        return (
+            self.is_valid
+            and another_gics.is_valid
+            and self._code != another_gics.code
+            and self._code.startswith(another_gics.code)
+        )
 
-    def is_immediate_within(self, another_gics: 'GICS'):
+    def is_immediate_within(self, another_gics: "GICS"):
         """Determines if this GICS is a sub-component of the given GICS at the most immediate level. For example, GICS
         1010 is immediate within GICS 10, but 101010 is not.
         Invalid GICS do not contain any children or belong to any parent, so if any of the GICS are invalid,
@@ -177,10 +207,15 @@ class GICS:
         Args:
             another_gics: GICS object to compare with
         """
-        return self.is_valid and another_gics.is_valid and self._code != another_gics.code and self._code.startswith(
-            another_gics.code) and len(self._code) == len(another_gics._code) + 2
+        return (
+            self.is_valid
+            and another_gics.is_valid
+            and self._code != another_gics.code
+            and self._code.startswith(another_gics.code)
+            and len(self._code) == len(another_gics._code) + 2
+        )
 
-    def contains(self, another_gics: 'GICS'):
+    def contains(self, another_gics: "GICS"):
         """Determines if this GICS contains the given GICS. For example, GICS 10 contains GICS 101010.
         Invalid GICS do not contain any children or belong to any parent, so if any of the GICS are invalid,
         this will always be false.
@@ -191,7 +226,7 @@ class GICS:
         """
         return another_gics.is_within(self)
 
-    def contains_immediate(self, another_gics: 'GICS'):
+    def contains_immediate(self, another_gics: "GICS"):
         """Determines if this GICS contains the given GICS at the most immediate level. For example, GICS 10 contains immediate GICS 1010, but not 101010.
         Invalid GICS do not contain any children or belong to any parent, so if any of the GICS are invalid, this will always be false.
         Two GICS that are the same are not considered to be within one another (10 does not contain 10).
